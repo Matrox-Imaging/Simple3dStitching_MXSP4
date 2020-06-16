@@ -4,7 +4,7 @@ Date: 06/16/2020
 
 **MIL Version** MIL X SP4  
 
-**Type** New example
+**Type** Updated example
 
 **Description**  
 This example demonstrates how to use the 3D surface registration to register two partial point clouds of a 3D object and stitch them into a single complete point cloud.  
