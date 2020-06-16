@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Example Revision="10.40.0671" Name="Simple3dStitching" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../.schema/example_restriction.xsd">
+  <Categories>
+    <Category Name="Overview">
+      <Category Name="Advanced">
+        <Category Name="Processing"/>
+      </Category>
+    </Category>
+    <Category Name="Industries">
+      <Category Name="Packaging"/>
+    </Category>
+    <Category Name="Applications">
+      <Category Name="3D profiling"/>
+      <Category Name="Finding/Locating"/>
+      <Category Name="Stitching"/>
+    </Category>
+    <Category Name="Modules">
+      <Category Name="3D Registration"/>
+      <Category Name="Buffer"/>
+      <Category Name="3D Display"/>
+      <Category Name="3D Graphics"/>
+      <Category Name="3D Image Processing"/>
+      <Category Name="3D Metrology"/>
+      <Category Name="3D Geometry"/>
+    </Category>
+    <Category Name="What's New">
+	  <Category Name="MIL 10.0 SP5"/>
+	  <Category Name="MIL 10.0 SP4"/>
+      <Category Name="MIL 10.0 PP2" New="1"/>
+      <Category Name="MIL 10.0 U37"/>
+    </Category>
+  </Categories>
+  <Description>
+    This example demonstrates how to use the 3D surface registration
+    to register two partial point clouds of a 3D object and
+    stitch them into a single complete point cloud.
+  </Description>
+  <Languages>
+    <Language>C++</Language>
+    <LinuxLanguage>C++</LinuxLanguage>
+  </Languages>
+  <Functions>    
+	<Function>M3ddispAlloc</Function>
+	<Function>M3ddispControl</Function>
+	<Function>M3ddispFree</Function>
+	<Function>M3ddispInquire</Function>
+	<Function>M3ddispSelect</Function>
+	<Function>M3ddispSetView</Function>
+	<Function>M3dgeoAlloc</Function>
+	<Function>M3dgeoBox</Function>
+	<Function>M3dgeoDraw3d</Function>
+	<Function>M3dgeoFree</Function>
+	<Function>M3dgeoMatrixSetTransform</Function>
+	<Function>M3dgraBox</Function>
+	<Function>M3dgraControl</Function>
+	<Function>M3dimAllocResult</Function>
+	<Function>M3dimControl</Function>
+	<Function>M3dimCrop</Function>
+	<Function>M3dimFree</Function>
+	<Function>M3dimGetResult</Function>
+    <Function>M3dimMatrixTransform</Function>
+	<Function>M3dimStat</Function>
+	<Function>M3dmetAllocResult</Function>
+	<Function>M3dmetFree</Function>
+	<Function>M3dmetGetResult</Function>
+	<Function>M3dmetStat</Function>
+	<Function>M3dregAlloc</Function>
+	<Function>M3dregAllocResult</Function>
+	<Function>M3dregCalculate</Function>
+	<Function>M3dregControl</Function>
+	<Function>M3dregCopyResult</Function>
+	<Function>M3dregFree</Function>
+	<Function>M3dregGetResult</Function>
+	<Function>M3dregInquire</Function>
+	<Function>M3dregMerge</Function>
+	<Function>M3dregSetLocation</Function>
+	<Function>MappAlloc</Function>
+    <Function>MappControl</Function>
+    <Function>MappFileOperation</Function>
+	<Function>MappFree</Function>
+	<Function>MappTimer</Function>
+	<Function>MbufAllocComponent</Function>
+	<Function>MbufAllocContainer</Function>
+	<Function>MbufImport</Function>
+	<Function>MbufClear</Function>
+	<Function>MbufFreeComponent</Function>
+	<Function>MbufFree</Function>
+	<Function>MbufInquireContainer</Function>
+	<Function>MobjInquire</Function>
+  </Functions>
+  <Licenses>
+    <License>3D Calibration and Supplement</License>
+    <License>Image Analysis</License>
+    <License>Registration</License>
+    <License>Metrology</License>
+  </Licenses>
+  <Keywords>
+    <Keyword>3D registration</Keyword>
+    <Keyword>3D surface alignment</Keyword>
+    <Keyword>3D matching</Keyword>
+    <Keyword>3D profiling</Keyword>
+    <Keyword>3D reconstruction</Keyword>
+    <Keyword>3D depth map</Keyword>
+    <Keyword>3D laser scanner</Keyword>
+    <Keyword>LUT</Keyword>
+  </Keywords>
+</Example>
