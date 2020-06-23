@@ -33,17 +33,11 @@ void PrintHeader()
    }
 
 // Utility functions.
-bool   CheckForRequiredMILFile       (MIL_CONST_TEXT_PTR FileName);
+bool   CheckForRequiredMILFile      (MIL_CONST_TEXT_PTR FileName);
 MIL_ID Alloc3dDisplayId             (MIL_ID MilSystem);
 
 // Enumerators definitions.
 enum { eSource = 0, eTarget, eStitched};
-enum StitchMethodEnum
-   {
-   eOverlapRegionOnly = 0,
-   eOverlapFullOnly,
-   eBoth
-   };
 
 // The number of point clouds.
 static const MIL_INT NB_POINT_CLOUD = 2;
@@ -56,12 +50,6 @@ static const MIL_DOUBLE EXTRACTION_BOX_SIZE_Z = -66;
 // Expected target location.
 static const MIL_DOUBLE BOX_OVERLAP = 0.20;
 static const MIL_DOUBLE BOX_USED_OVERLAP = 0.9 * BOX_OVERLAP;
-static const MIL_DOUBLE EXP_TX = 0.0;
-static const MIL_DOUBLE EXP_TY = 15.0;
-static const MIL_DOUBLE EXP_TZ = 0.0;
-static const MIL_DOUBLE EXP_RX = 0.0;
-static const MIL_DOUBLE EXP_RY = 0.0;
-static const MIL_DOUBLE EXP_RZ = -6.0;
 
 // Registration context controls definitions.
 static const MIL_DOUBLE GRID_SIZE = 1.0;
@@ -70,7 +58,6 @@ static const MIL_DOUBLE OVERLAP = 95; // %
 static const MIL_INT    MAX_ITERATIONS = 100;
 static const MIL_DOUBLE RMS_ERROR_RELATIVE_THRESHOLD = 0.5;  // %
 static const MIL_INT    ERROR_MINIMIZATION_METRIC = M_POINT_TO_POINT;
-static StitchMethodEnum STITCH_REGISTRATION_METHOD = eBoth;
 
 // Visualization variables definitions.
 static const MIL_INT    NUM_BOX_POINTS = 24; // A 3d cube box has 24 points.
@@ -132,7 +119,7 @@ int MosMain()
    for(MIL_INT i = 0; i < NB_POINT_CLOUD ; ++i)
       MilCroppedPointCloud[i] = MbufAllocContainer(MilSystem, M_PROC + M_DISP, M_DEFAULT, M_UNIQUE_ID);
 
-   // Generate the unorganized point cloud.
+   // Restore the unorganized point clouds.
    MosPrintf(MIL_TEXT("The reference and target point clouds are being restored..."));
    MilPointCloud[eSource] = MbufRestore(FILE_SOURCE_POINT_CLOUD[0], MilSystem, M_UNIQUE_ID );
    MilPointCloud[eTarget] = MbufRestore(FILE_SOURCE_POINT_CLOUD[1], MilSystem, M_UNIQUE_ID);
@@ -157,7 +144,7 @@ int MosMain()
  
       // Add titles to displays.
       M3ddispControl(MilDisplay[d], M_TITLE, DISPLAY_NAMES[d]);
-      //Adjust view point
+      // Adjust view point
       M3ddispSetView(MilDisplay[d], M_AUTO, M_BOTTOM_VIEW, M_DEFAULT, M_DEFAULT,  M_DEFAULT);
       }
 
@@ -179,26 +166,15 @@ int MosMain()
    // Get the total number of points of the reference point cloud.
    MIL_UNIQUE_3DIM_ID ResultId = M3dimAllocResult(MilSystem, M_STATISTICS_RESULT, M_DEFAULT, M_UNIQUE_ID);
    MIL_INT SourceTotalNbPoints;
-   M3dimStat(M_STAT_CONTEXT_NUMBER_OF_POINTS,MilPointCloud[eSource], ResultId, M_DEFAULT );
+   M3dimStat(M_STAT_CONTEXT_NUMBER_OF_POINTS, MilPointCloud[eSource], ResultId, M_DEFAULT );
    M3dimGetResult(ResultId, M_NUMBER_OF_POINTS_VALID, &SourceTotalNbPoints);
 
-   // Get the number of points of the source point cloud in the expected overlap region.
-   MIL_INT SourceOverlapNbOfPoints;
+   // Define the overlap box.
    MIL_UNIQUE_3DGEO_ID MilBox = M3dgeoAlloc(MilSystem, M_GEOMETRY, M_DEFAULT, M_UNIQUE_ID);
-
    M3dgeoBox(MilBox, M_CENTER_AND_DIMENSION,
              0.0, 0.0, 0.0,
              EXTRACTION_BOX_SIZE_X, EXTRACTION_BOX_SIZE_Y * BOX_USED_OVERLAP, EXTRACTION_BOX_SIZE_Z,
              M_DEFAULT);
-
-   //--------------------------------------------------------------------------
-   // 3D registration.
-   // Transform  the target point cloud at the expected location.
-   MIL_UNIQUE_3DGEO_ID MilMatrix = M3dgeoAlloc(MilSystem, M_TRANSFORMATION_MATRIX, M_DEFAULT, M_UNIQUE_ID);
-   M3dgeoMatrixSetTransform(MilMatrix, M_TRANSLATION , EXP_TX, EXP_TY, EXP_TZ, M_DEFAULT, M_DEFAULT);
-   M3dgeoMatrixSetTransform(MilMatrix, M_ROTATION_XYZ, EXP_RX, EXP_RY, EXP_RZ, M_DEFAULT, M_COMPOSE_WITH_CURRENT);
-
-   M3dimMatrixTransform(MilPointCloud[eTarget], MilPointCloud[eTarget], MilMatrix, M_DEFAULT);
 
    // Draw the overlap boxes.
    for(MIL_INT i = 0; i < NB_POINT_CLOUD; ++i)
@@ -210,10 +186,13 @@ int MosMain()
       }
 
    MosPrintf(MIL_TEXT("The object's reference and target, are displayed using pseudo colors.\n")
-             MIL_TEXT("A gray box is displayed to show the expected common overlap region\n")
+             MIL_TEXT("A white box is displayed to show the expected common overlap region\n")
              MIL_TEXT("for both partial point clouds.\n\n"));
    MosPrintf(MIL_TEXT("Press <Enter> to perform the registration.\n"));
    MosGetch();
+
+   //--------------------------------------------------------------------------
+   // 3D registration.
 
    MosPrintf(MIL_TEXT("\tProcessing."));
 
@@ -225,6 +204,7 @@ int MosMain()
    MIL_ID MilSubsampleContext = M_NULL;
    M3dregInquire(MilRegistrationContext, M_DEFAULT, M_SUBSAMPLE_CONTEXT_ID, &MilSubsampleContext);
 
+   // Subsampling is used to reduce the number of points used during the registration and yield faster results.
    M3dimControl(MilSubsampleContext, M_STEP_SIZE_X, DECIMATION_STEP);
    M3dimControl(MilSubsampleContext, M_STEP_SIZE_Y, DECIMATION_STEP);
 
@@ -237,62 +217,55 @@ int MosMain()
    MIL_INT  RegistrationStatus = M_NULL;
    MIL_DOUBLE ComputationTime = 0.0;
 
+   // Set the box to the expected overlap region.
+   for(MIL_INT p = 0; p < NB_POINT_CLOUD; p++)
+      {
+      M3dimCrop(MilPointCloud[p], MilCroppedPointCloud[p], MilBox, M_NULL, M_DEFAULT, M_DEFAULT);
+      MosPrintf(MIL_TEXT("."));
+      }
+
    MappTimer(M_TIMER_RESET, M_NULL);
 
-    if(STITCH_REGISTRATION_METHOD == eOverlapRegionOnly || STITCH_REGISTRATION_METHOD == eBoth)
+   // Pre-registration with a given overlap.
+   M3dregControl(MilRegistrationContext, M_ALL, M_OVERLAP, OVERLAP);
+   M3dregCalculate(MilRegistrationContext, MilCroppedPointCloud, NB_POINT_CLOUD,
+                   MilRegistrationResult, M_DEFAULT);
+   MosPrintf(MIL_TEXT("."));
+  
+   MIL_ID MilPreregistration = MilRegistrationResult;
+
+   M3dgeoBox(MilBox,
+             M_CENTER_AND_DIMENSION,
+             0.0, 0.0, 0.0,
+             EXTRACTION_BOX_SIZE_X, EXTRACTION_BOX_SIZE_Y * BOX_OVERLAP, EXTRACTION_BOX_SIZE_Z,
+             M_DEFAULT);
+
+   // Get the number of points of the source point cloud in the expected overlap region.
+   MIL_INT SourceOverlapNbOfPoints;
+   MIL_UNIQUE_3DMET_ID MilStatResult = M3dmetAllocResult(MilSystem, M_STATISTICS_RESULT, M_DEFAULT, M_UNIQUE_ID);
+   M3dmetStat(M_STAT_CONTEXT_NUMBER, MilPointCloud[eSource], MilBox, MilStatResult, M_SIGNED_DISTANCE_TO_SURFACE, M_LESS_OR_EQUAL, 0, M_NULL, M_DEFAULT);
+   M3dmetGetResult(MilStatResult, M_STAT_NUMBER, &SourceOverlapNbOfPoints);
+
+   // Set the box to the expected overlap region.
+   for(MIL_INT p = 0; p < NB_POINT_CLOUD; p++)
       {
-      // Set the box to the expected overlap region.
-      for(MIL_INT p = 0; p < NB_POINT_CLOUD; p++)
-         {
-         M3dimCrop(MilPointCloud[p], MilCroppedPointCloud[p], MilBox, M_NULL, M_DEFAULT, M_DEFAULT);
-         MosPrintf(MIL_TEXT("."));
-         }
-
-      // Pre-registration with a given overlap.
-      M3dregControl  (MilRegistrationContext, M_ALL, M_OVERLAP, OVERLAP);
-      M3dregCalculate(MilRegistrationContext, MilCroppedPointCloud, NB_POINT_CLOUD,
-                      MilRegistrationResult, M_DEFAULT);
-      }
-    MosPrintf(MIL_TEXT("."));
-
-   if(STITCH_REGISTRATION_METHOD == eOverlapFullOnly || STITCH_REGISTRATION_METHOD == eBoth)
-      {
-      MIL_ID MilPreregistration = eBoth ? MilRegistrationResult : M_NULL;
-
-      M3dgeoBox(MilBox,
-                M_CENTER_AND_DIMENSION,
-                0.0, 0.0, 0.0,
-                EXTRACTION_BOX_SIZE_X, EXTRACTION_BOX_SIZE_Y * BOX_OVERLAP, EXTRACTION_BOX_SIZE_Z,
-                M_DEFAULT);
-
-      MIL_UNIQUE_3DMET_ID MilStatResult = M3dmetAllocResult(MilSystem, M_STATISTICS_RESULT, M_DEFAULT, M_UNIQUE_ID);
-      M3dmetStat(M_STAT_CONTEXT_NUMBER, MilPointCloud[eSource], MilBox, MilStatResult, M_SIGNED_DISTANCE_TO_SURFACE, M_LESS_OR_EQUAL, 0, M_NULL, M_DEFAULT);
-      M3dmetGetResult(MilStatResult, M_STAT_NUMBER, &SourceOverlapNbOfPoints);
-
-      // Set the box to the expected overlap region.
-      for(MIL_INT p = 0; p < NB_POINT_CLOUD; p++)
-         {
-         M3dimCrop(MilPointCloud[p], MilCroppedPointCloud[p],
-                   MilBox, M_NULL, M_DEFAULT, M_DEFAULT);
-         MosPrintf(MIL_TEXT("."));
-         }
-
-      // Set the full model overlap based on the expected overlap between the two point clouds.
-      MIL_DOUBLE FullModelOverlap = ((MIL_DOUBLE) SourceOverlapNbOfPoints / SourceTotalNbPoints) * OVERLAP;
-      M3dregControl(MilRegistrationContext, M_ALL, M_OVERLAP, FullModelOverlap);
-
-      // Set the pre-registration matrix if available.
-      if(MilPreregistration)
-         {
-         M3dregSetLocation(MilRegistrationContext, eTarget, eSource, MilPreregistration, M_DEFAULT, M_DEFAULT, M_DEFAULT);
-         }
-   
-      // Use the full point clouds.
-      MosPrintf(MIL_TEXT("."));
-      M3dregCalculate(MilRegistrationContext, MilCroppedPointCloud, NB_POINT_CLOUD,
-                      MilRegistrationResult, M_DEFAULT);
+      M3dimCrop(MilPointCloud[p], MilCroppedPointCloud[p],
+                MilBox, M_NULL, M_DEFAULT, M_DEFAULT);
       MosPrintf(MIL_TEXT("."));
       }
+
+   // Set the full model overlap based on the expected overlap between the two point clouds.
+   MIL_DOUBLE FullModelOverlap = ((MIL_DOUBLE)SourceOverlapNbOfPoints / SourceTotalNbPoints) * OVERLAP;
+   M3dregControl(MilRegistrationContext, M_ALL, M_OVERLAP, FullModelOverlap);
+
+   // Set the pre-registration matrix.
+   M3dregSetLocation(MilRegistrationContext, eTarget, eSource, MilPreregistration, M_DEFAULT, M_DEFAULT, M_DEFAULT);
+
+   // Use the full point clouds.
+   MosPrintf(MIL_TEXT("."));
+   M3dregCalculate(MilRegistrationContext, MilCroppedPointCloud, NB_POINT_CLOUD,
+                   MilRegistrationResult, M_DEFAULT);
+   MosPrintf(MIL_TEXT("."));
 
    MappTimer(M_TIMER_READ, &ComputationTime);
    MosPrintf(MIL_TEXT("done\n\n"));
@@ -345,6 +318,7 @@ int MosMain()
       MIL_ID MilReflectance = MbufAllocComponent(MilPointCloud[i], 3, SizeX, SizeY, M_UNSIGNED + 8, M_IMAGE + M_PROC + M_DISP, M_COMPONENT_REFLECTANCE, M_NULL);//Colored reflectance
 
       MbufClear(MilReflectance, (i == 0) ? M_RGB888(135, 165, 235) : M_RGB888(75, 125, 215));
+      M3ddispControl(MilDisplay[i], M_UPDATE, M_ENABLE);
       }
 
    M3dregMerge(MilRegistrationResult, MilPointCloud, 2, MilPointCloud[eStitched], M_NULL, M_DEFAULT);
@@ -365,7 +339,7 @@ int MosMain()
 
    MosPrintf(MIL_TEXT("The two point clouds have been stitched into a single point cloud.\n")
              MIL_TEXT("The resulting stitched point cloud is displayed.\n")
-             MIL_TEXT("A gray rectangular box show the transformed overlap region.\n\n"));
+             MIL_TEXT("A white rectangular box show the transformed overlap region.\n\n"));
    MosPrintf(MIL_TEXT("Press <Enter> to end.\n"));
    MosGetch();
 
@@ -402,7 +376,7 @@ bool CheckForRequiredMILFile(MIL_CONST_TEXT_PTR FileName)
    }
 
 //--------------------------------------------------------------------------
-// Creates a 3D display and returns its MIL identifier.  
+// Allocates a 3D display and returns its MIL identifier.  
 //--------------------------------------------------------------------------
 MIL_ID Alloc3dDisplayId(MIL_ID MilSystem)
    {
