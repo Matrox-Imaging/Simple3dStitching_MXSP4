@@ -24,7 +24,6 @@
       <Category Name="3D Geometry"/>
     </Category>
     <Category Name="What's New">
-	  <Category Name="MIL 10.0 SP5"/>
 	  <Category Name="MIL 10.0 SP4"/>
       <Category Name="MIL 10.0 PP2" New="1"/>
       <Category Name="MIL 10.0 U37"/>
